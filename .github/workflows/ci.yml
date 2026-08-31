@@ -1,0 +1,13 @@
+name: CI
+on: [push, pull_request]
+permissions: {contents: read}
+jobs:
+  test:
+    strategy: {matrix: {php: ['8.2','8.3','8.4']}}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: {php-version: '${{ matrix.php }}'}
+      - run: php -l src/Client.php
+      - run: php tests/run.php
