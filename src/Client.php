@@ -9,6 +9,14 @@ final class Client {
     public function listProducts(int $limit = 20, ?string $cursor = null, ?string $query = null): array {
         $params=['limit'=>(string)max(1,min(100,$limit))]; if($cursor!==null)$params['cursor']=$cursor;if($query!==null&&trim($query)!=='')$params['query']=trim($query);
         $url=rtrim($this->baseUrl,'/').'/v1/headless/products?'.http_build_query($params);
+        return $this->get($url);
+    }
+    /** @return array{data:array<string,mixed>,requestId:string} */
+    public function getProduct(string $id): array { return $this->get(rtrim($this->baseUrl,'/').'/v1/headless/products/'.rawurlencode($id)); }
+    /** @return array{data:list<array<string,mixed>>,requestId:string} */
+    public function listCategories(): array { return $this->get(rtrim($this->baseUrl,'/').'/v1/headless/products/categories'); }
+    /** @return array<string,mixed> */
+    private function get(string $url): array {
         for($attempt=0;$attempt<=$this->maxRetries;$attempt++){
             $response=$this->send($url); $status=$response['status'];
             if($status>=200&&$status<300){$data=json_decode($response['body'],true,512,JSON_THROW_ON_ERROR);return $data;}
