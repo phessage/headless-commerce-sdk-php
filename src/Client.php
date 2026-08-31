@@ -25,6 +25,14 @@ final class Client {
     public function updateCartItem(string $cartToken,string $itemId,int $quantity): array { return $this->cartRequest('PATCH','/v1/headless/carts/current/items/'.rawurlencode($itemId),$cartToken,['quantity'=>$quantity]); }
     /** @return array{data:array<string,mixed>,requestId:string} */
     public function removeCartItem(string $cartToken,string $itemId): array { return $this->cartRequest('DELETE','/v1/headless/carts/current/items/'.rawurlencode($itemId),$cartToken); }
+    /** @return array{data:array<string,mixed>,requestId:string} */
+    public function getCheckoutPreparation(string $cartToken): array { return $this->cartRequest('GET','/v1/headless/carts/current/checkout',$cartToken); }
+    /** @param array<string,mixed> $details @return array{data:array<string,mixed>,requestId:string} */
+    public function updateCheckoutDetails(string $cartToken,array $details): array { return $this->cartRequest('PATCH','/v1/headless/carts/current/checkout',$cartToken,$details); }
+    /** @return array{data:array<string,mixed>,requestId:string} */
+    public function selectCheckoutShippingMethod(string $cartToken,string $id): array { return $this->cartRequest('PUT','/v1/headless/carts/current/checkout/shipping-method',$cartToken,['id'=>$id]); }
+    /** @return array{data:array<string,mixed>,requestId:string} */
+    public function selectCheckoutPaymentMethod(string $cartToken,string $id): array { return $this->cartRequest('PUT','/v1/headless/carts/current/checkout/payment-method',$cartToken,['id'=>$id]); }
     /** @return array<string,mixed> */
     private function get(string $url): array {
         for($attempt=0;$attempt<=$this->maxRetries;$attempt++){
