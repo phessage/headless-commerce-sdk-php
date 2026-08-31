@@ -1,0 +1,1 @@
+<?php declare(strict_types=1);return ['base_url'=>env('HEADLESS_COMMERCE_URL',''),'publishable_key'=>env('HEADLESS_COMMERCE_PUBLISHABLE_KEY',''),'max_retries'=>(int)env('HEADLESS_COMMERCE_MAX_RETRIES',2)];
