@@ -43,6 +43,8 @@ final class Client {
     public function selectCheckoutPaymentMethod(string $cartToken,string $id): array { return $this->cartRequest('PUT','/v1/headless/carts/current/checkout/payment-method',$cartToken,['id'=>$id]); }
     /** @return array{data:array<string,mixed>,requestId:string} */
     public function placeOrder(string $cartToken,string $idempotencyKey): array {$key=trim($idempotencyKey);if($key===''||strlen($key)>120)throw new \InvalidArgumentException('An idempotency key of 1-120 characters is required');if(!str_starts_with($cartToken,'hc_'))throw new \InvalidArgumentException('A cart capability token is required');return $this->request('POST',rtrim($this->baseUrl,'/').'/v1/headless/carts/current/checkout/order',null,$cartToken,true,['Idempotency-Key'=>$key]);}
+    /** @return array{data:array<string,mixed>,requestId:string} */
+    public function lookupOrder(string $orderNumber,string $email): array {$number=trim($orderNumber);$address=trim($email);if($number===''||$address===''||filter_var($address,FILTER_VALIDATE_EMAIL)===false)throw new \InvalidArgumentException('An order number and valid checkout email are required');return $this->request('POST',rtrim($this->baseUrl,'/').'/v1/headless/orders/lookup',['orderNumber'=>$number,'email'=>$address],null,false);}
     /** @return array<string,mixed> */
     private function get(string $url): array {
         for($attempt=0;$attempt<=$this->maxRetries;$attempt++){
