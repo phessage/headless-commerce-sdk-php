@@ -1,17 +1,25 @@
-# 1Ecomm PHP SDK
+# 1Ecomm Headless Commerce PHP SDK
 
-Framework-neutral PHP 8.2+ client for the versioned 1Ecomm headless commerce API.
+Use this PHP 8.2+ package for a PHP or Laravel website that sells products from a 1Ecomm store.
 
-Use `Client::forStore('your-site-uuid')` for one-field setup. It resolves the public runtime document and returns the same tenant-bound client used by the explicit URL/key constructor.
+## Start
 
-Run `php tests/run.php`. The preview supports published catalog reads, opaque cursors, typed problem details, safe-read retries, and injectable transport for framework/testing integration.
+Install the package dependencies, run its self-check, then create a client with the one value shown by 1Ecomm:
 
-Run `HEADLESS_API_URL=https://... HEADLESS_PUBLISHABLE_KEY=pk_... php tests/live.php` against a dedicated fixture environment for the real catalog, cart and checkout-preparation gate. The command fails closed without both values and never prints the key.
+```bash
+composer install
+composer check
+```
 
-Use `createCart()` to obtain a capability token, retain it in the shopper session, and pass it to cart reads and mutations. Mutations are never automatically retried because an add request is not replay-safe.
+```php
+$client = Phessage\HeadlessCommerce\Client::forStore('your-store-id');
+$products = $client->listProducts();
+```
 
-The preview also supports checkout preparation and capability-gated non-hosted placement. Call `placeOrder($cartToken, $intentKey)` only after selecting a method that explicitly supports non-hosted orders; retain and reuse the same intent key after uncertainty. Hosted payment and payment capture remain excluded.
+The client discovers the correct public API settings. A store ID is an identifier, not a password. Laravel package discovery and configuration are explained in [Laravel integration](docs/laravel.md).
 
-See [architecture](docs/architecture.md) and [security](docs/security.md).
+`php tests/live.php` runs the complete maintained fixture journey with no environment setup: catalog, isolated cart, checkout choices and one pending bank-transfer test order. Set `HEADLESS_STORE_ID` only for another provisioned sandbox. The test does not charge money.
 
-Laravel package discovery and configuration are documented in [Laravel integration](docs/laravel.md).
+The package supports catalog, anonymous cart, guest checkout preparation and capability-gated non-hosted order placement. Keep a cart token in the shopper's secure session. Reuse the same order intent key after an uncertain result; do not blindly replay ordinary cart changes.
+
+This preview does not collect card/wallet payments, capture/refund money, merge customer carts, or deliver webhooks. See [architecture](docs/architecture.md) and [security](docs/security.md).
