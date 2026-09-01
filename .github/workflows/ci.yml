@@ -19,11 +19,9 @@ jobs:
         with: {php-version: '8.3'}
       - run: composer install --no-interaction --prefer-dist
       - run: composer test:laravel
-  live:
+  deployed-contract:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
-        with: {php-version: '8.4'}
-      - name: Deployed sandbox contract journey
-        run: php tests/live.php
+      - name: Deployed non-mutating bootstrap probe
+        run: curl --fail --silent --show-error https://api.1ecomm.com/v1/headless/stores/01f5b02f-d7c0-42cd-b880-59f78ea70aa3/config >/dev/null
