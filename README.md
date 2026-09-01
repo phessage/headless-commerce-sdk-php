@@ -10,7 +10,7 @@ Run `HEADLESS_API_URL=https://... HEADLESS_PUBLISHABLE_KEY=pk_... php tests/live
 
 Use `createCart()` to obtain a capability token, retain it in the shopper session, and pass it to cart reads and mutations. Mutations are never automatically retried because an add request is not replay-safe.
 
-The preview also supports checkout preparation: update guest contact/addresses, read and select server-authoritative shipping/payment choices, and inspect missing prerequisites. Order finalization and payment capture are deliberately excluded.
+The preview also supports checkout preparation and capability-gated non-hosted placement. Call `placeOrder($cartToken, $intentKey)` only after selecting a method that explicitly supports non-hosted orders; retain and reuse the same intent key after uncertainty. Hosted payment and payment capture remain excluded.
 
 See [architecture](docs/architecture.md) and [security](docs/security.md).
 
