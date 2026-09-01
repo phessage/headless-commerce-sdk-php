@@ -1,1 +1,1 @@
-<?php declare(strict_types=1);return ['base_url'=>env('HEADLESS_COMMERCE_URL',''),'publishable_key'=>env('HEADLESS_COMMERCE_PUBLISHABLE_KEY',''),'max_retries'=>(int)env('HEADLESS_COMMERCE_MAX_RETRIES',2)];
+<?php declare(strict_types=1);return ['store_id'=>env('HEADLESS_COMMERCE_STORE_ID',''),'bootstrap_url'=>env('HEADLESS_COMMERCE_BOOTSTRAP_URL','https://api.1ecomm.com'),'base_url'=>env('HEADLESS_COMMERCE_URL',''),'publishable_key'=>env('HEADLESS_COMMERCE_PUBLISHABLE_KEY',''),'max_retries'=>(int)env('HEADLESS_COMMERCE_MAX_RETRIES',2)];
