@@ -5,6 +5,14 @@ final class Client {
     public function __construct(private readonly string $baseUrl, private readonly string $publishableKey, private readonly mixed $transport = null, private readonly int $maxRetries = 2) {
         if ($baseUrl === '' || !str_starts_with($publishableKey, 'pk_')) throw new \InvalidArgumentException('A base URL and publishable key are required');
     }
+    public static function forStore(string $storeId,string $bootstrapUrl='https://api.1ecomm.com',mixed $transport=null,int $maxRetries=2):self {
+        $url=rtrim($bootstrapUrl,'/').'/v1/headless/stores/'.rawurlencode($storeId).'/config';
+        if(is_callable($transport))$response=$transport($url,['Accept'=>'application/json'],'GET',null);else{$context=stream_context_create(['http'=>['method'=>'GET','ignore_errors'=>true,'timeout'=>10,'header'=>"Accept: application/json\r\n"]]);$body=file_get_contents($url,false,$context);$line=$http_response_header[0]??'HTTP/1.1 500';preg_match('/\s(\d{3})\s/',$line,$match);$response=['status'=>(int)($match[1]??500),'body'=>$body===false?'':$body];}
+        if($response['status']!==200)throw new \RuntimeException('Headless store bootstrap failed');
+        $runtime=json_decode($response['body'],true,512,JSON_THROW_ON_ERROR)['data']??[];
+        if(($runtime['storeId']??null)!==$storeId||!str_starts_with((string)($runtime['publishableKey']??''),'pk_'))throw new \RuntimeException('Invalid headless store bootstrap response');
+        return new self((string)$runtime['apiUrl'],(string)$runtime['publishableKey'],$transport,$maxRetries);
+    }
     /** @return array{data:list<array<string,mixed>>,nextCursor:?string,requestId:string} */
     public function listProducts(int $limit = 20, ?string $cursor = null, ?string $query = null): array {
         $params=['limit'=>(string)max(1,min(100,$limit))]; if($cursor!==null)$params['cursor']=$cursor;if($query!==null&&trim($query)!=='')$params['query']=trim($query);
