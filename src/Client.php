@@ -41,6 +41,8 @@ final class Client {
     public function selectCheckoutShippingMethod(string $cartToken,string $id): array { return $this->cartRequest('PUT','/v1/headless/carts/current/checkout/shipping-method',$cartToken,['id'=>$id]); }
     /** @return array{data:array<string,mixed>,requestId:string} */
     public function selectCheckoutPaymentMethod(string $cartToken,string $id): array { return $this->cartRequest('PUT','/v1/headless/carts/current/checkout/payment-method',$cartToken,['id'=>$id]); }
+    /** @return array{data:array<string,mixed>,requestId:string} */
+    public function placeOrder(string $cartToken,string $idempotencyKey): array {$key=trim($idempotencyKey);if($key===''||strlen($key)>120)throw new \InvalidArgumentException('An idempotency key of 1-120 characters is required');if(!str_starts_with($cartToken,'hc_'))throw new \InvalidArgumentException('A cart capability token is required');return $this->request('POST',rtrim($this->baseUrl,'/').'/v1/headless/carts/current/checkout/order',null,$cartToken,true,['Idempotency-Key'=>$key]);}
     /** @return array<string,mixed> */
     private function get(string $url): array {
         for($attempt=0;$attempt<=$this->maxRetries;$attempt++){
@@ -53,10 +55,10 @@ final class Client {
     /** @param array<string,mixed>|null $body @return array<string,mixed> */
     private function cartRequest(string $method,string $path,string $cartToken,?array $body=null): array {if(!str_starts_with($cartToken,'hc_'))throw new \InvalidArgumentException('A cart capability token is required');return $this->request($method,rtrim($this->baseUrl,'/').$path,$body,$cartToken,$method==='GET');}
     /** @param array<string,mixed>|null $body @return array<string,mixed> */
-    private function request(string $method,string $url,?array $body,?string $cartToken,bool $retry): array {$attempts=$retry?$this->maxRetries+1:1;for($attempt=0;$attempt<$attempts;$attempt++){$response=$this->send($url,$method,$body===null?null:json_encode($body,JSON_THROW_ON_ERROR),$cartToken);$status=$response['status'];if($status>=200&&$status<300)return json_decode($response['body'],true,512,JSON_THROW_ON_ERROR);if($retry&&in_array($status,[429,502,503,504],true)&&$attempt+1<$attempts)continue;$problem=json_decode($response['body'],true)?:[];throw new ProblemException($status,$problem['type']??'about:blank',$problem['requestId']??null,$problem['detail']??$problem['title']??'Request failed');}throw new \LogicException('Unreachable');}
+    private function request(string $method,string $url,?array $body,?string $cartToken,bool $retry,array $extraHeaders=[]): array {$attempts=$retry?$this->maxRetries+1:1;for($attempt=0;$attempt<$attempts;$attempt++){$response=$this->send($url,$method,$body===null?null:json_encode($body,JSON_THROW_ON_ERROR),$cartToken,$extraHeaders);$status=$response['status'];if($status>=200&&$status<300)return json_decode($response['body'],true,512,JSON_THROW_ON_ERROR);if($retry&&in_array($status,[429,502,503,504],true)&&$attempt+1<$attempts)continue;$problem=json_decode($response['body'],true)?:[];throw new ProblemException($status,$problem['type']??'about:blank',$problem['requestId']??null,$problem['detail']??$problem['title']??'Request failed');}throw new \LogicException('Unreachable');}
     /** @return array{status:int,body:string} */
-    private function send(string $url,string $method,?string $body,?string $cartToken): array {
-        $headers=['Accept'=>'application/json','x-publishable-key'=>$this->publishableKey];if($cartToken!==null)$headers['x-cart-token']=$cartToken;if($body!==null)$headers['Content-Type']='application/json';
+    private function send(string $url,string $method,?string $body,?string $cartToken,array $extraHeaders=[]): array {
+        $headers=['Accept'=>'application/json','x-publishable-key'=>$this->publishableKey]+$extraHeaders;if($cartToken!==null)$headers['x-cart-token']=$cartToken;if($body!==null)$headers['Content-Type']='application/json';
         if(is_callable($this->transport))return ($this->transport)($url,$headers,$method,$body);
         $header='';foreach($headers as $name=>$value)$header.="{$name}: {$value}\r\n";
         $context=stream_context_create(['http'=>['method'=>$method,'ignore_errors'=>true,'timeout'=>10,'header'=>$header,'content'=>$body??'']]);
