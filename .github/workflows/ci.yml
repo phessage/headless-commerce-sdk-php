@@ -19,3 +19,11 @@ jobs:
         with: {php-version: '8.3'}
       - run: composer install --no-interaction --prefer-dist
       - run: composer test:laravel
+  live:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: {php-version: '8.4'}
+      - name: Deployed sandbox contract journey
+        run: php tests/live.php
