@@ -2,16 +2,18 @@
 namespace Phessage\HeadlessCommerce;
 final class Client {
     /** @param null|callable(string,array<string,string>,string,?string):array{status:int,body:string,headers?:array<string,string>} $transport */
-    public function __construct(private readonly string $baseUrl, private readonly string $publishableKey, private readonly mixed $transport = null, private readonly int $maxRetries = 2) {
+    public function __construct(private readonly string $baseUrl, private readonly string $publishableKey, private readonly mixed $transport = null, private readonly int $maxRetries = 2, private readonly float $timeoutSeconds = 10.0) {
         if ($baseUrl === '' || !str_starts_with($publishableKey, 'pk_')) throw new \InvalidArgumentException('A base URL and publishable key are required');
+        if ($timeoutSeconds <= 0 || $timeoutSeconds > 120) throw new \InvalidArgumentException('timeoutSeconds must be between 0 and 120');
     }
-    public static function forStore(string $storeId,string $bootstrapUrl='https://api.1ecomm.com',mixed $transport=null,int $maxRetries=2):self {
+    public static function forStore(string $storeId,string $bootstrapUrl='https://api.1ecomm.com',mixed $transport=null,int $maxRetries=2,float $timeoutSeconds=10.0):self {
         $url=rtrim($bootstrapUrl,'/').'/v1/headless/stores/'.rawurlencode($storeId).'/config';
-        if(is_callable($transport))$response=$transport($url,['Accept'=>'application/json'],'GET',null);else{$context=stream_context_create(['http'=>['method'=>'GET','ignore_errors'=>true,'timeout'=>10,'header'=>"Accept: application/json\r\n"]]);$body=file_get_contents($url,false,$context);$line=$http_response_header[0]??'HTTP/1.1 500';preg_match('/\s(\d{3})\s/',$line,$match);$response=['status'=>(int)($match[1]??500),'body'=>$body===false?'':$body];}
+        if($timeoutSeconds<=0||$timeoutSeconds>120)throw new \InvalidArgumentException('timeoutSeconds must be between 0 and 120');
+        if(is_callable($transport))$response=$transport($url,['Accept'=>'application/json'],'GET',null);else{$context=stream_context_create(['http'=>['method'=>'GET','ignore_errors'=>true,'timeout'=>$timeoutSeconds,'header'=>"Accept: application/json\r\n"]]);$body=file_get_contents($url,false,$context);$line=$http_response_header[0]??'HTTP/1.1 500';preg_match('/\s(\d{3})\s/',$line,$match);$response=['status'=>(int)($match[1]??500),'body'=>$body===false?'':$body];}
         if($response['status']!==200)throw new \RuntimeException('Headless store bootstrap failed');
         $runtime=json_decode($response['body'],true,512,JSON_THROW_ON_ERROR)['data']??[];
         if(($runtime['storeId']??null)!==$storeId||!str_starts_with((string)($runtime['publishableKey']??''),'pk_'))throw new \RuntimeException('Invalid headless store bootstrap response');
-        return new self((string)$runtime['apiUrl'],(string)$runtime['publishableKey'],$transport,$maxRetries);
+        return new self((string)$runtime['apiUrl'],(string)$runtime['publishableKey'],$transport,$maxRetries,$timeoutSeconds);
     }
     /** @return array{data:list<array<string,mixed>>,nextCursor:?string,requestId:string} */
     public function listProducts(int $limit = 20, ?string $cursor = null, ?string $query = null): array {
@@ -51,23 +53,25 @@ final class Client {
             $response=$this->send($url,'GET',null,null); $status=$response['status'];
             if($status>=200&&$status<300){$data=json_decode($response['body'],true,512,JSON_THROW_ON_ERROR);return $data;}
             if(in_array($status,[429,502,503,504],true)&&$attempt<$this->maxRetries){$this->waitBeforeRetry($response,$attempt);continue;}
-            $problem=json_decode($response['body'],true)?:[];throw new ProblemException($status,$problem['type']??'about:blank',$this->header($response,'x-request-id')??$problem['requestId']??null,$problem['detail']??$problem['title']??'Request failed');
+            $problem=json_decode($response['body'],true)?:[];throw new ProblemException($status,$problem['type']??'about:blank',$this->header($response,'x-request-id')??$problem['requestId']??null,$problem['detail']??$problem['title']??'Request failed',$this->rateLimit($response));
         } throw new \LogicException('Unreachable');
     }
     /** @param array<string,mixed>|null $body @return array<string,mixed> */
     private function cartRequest(string $method,string $path,string $cartToken,?array $body=null): array {if(!str_starts_with($cartToken,'hc_'))throw new \InvalidArgumentException('A cart capability token is required');return $this->request($method,rtrim($this->baseUrl,'/').$path,$body,$cartToken,$method==='GET');}
     /** @param array<string,mixed>|null $body @return array<string,mixed> */
-    private function request(string $method,string $url,?array $body,?string $cartToken,bool $retry,array $extraHeaders=[]): array {$attempts=$retry?$this->maxRetries+1:1;for($attempt=0;$attempt<$attempts;$attempt++){$response=$this->send($url,$method,$body===null?null:json_encode($body,JSON_THROW_ON_ERROR),$cartToken,$extraHeaders);$status=$response['status'];if($status>=200&&$status<300)return json_decode($response['body'],true,512,JSON_THROW_ON_ERROR);if($retry&&in_array($status,[429,502,503,504],true)&&$attempt+1<$attempts){$this->waitBeforeRetry($response,$attempt);continue;}$problem=json_decode($response['body'],true)?:[];throw new ProblemException($status,$problem['type']??'about:blank',$this->header($response,'x-request-id')??$problem['requestId']??null,$problem['detail']??$problem['title']??'Request failed');}throw new \LogicException('Unreachable');}
+    private function request(string $method,string $url,?array $body,?string $cartToken,bool $retry,array $extraHeaders=[]): array {$attempts=$retry?$this->maxRetries+1:1;for($attempt=0;$attempt<$attempts;$attempt++){$response=$this->send($url,$method,$body===null?null:json_encode($body,JSON_THROW_ON_ERROR),$cartToken,$extraHeaders);$status=$response['status'];if($status>=200&&$status<300)return json_decode($response['body'],true,512,JSON_THROW_ON_ERROR);if($retry&&in_array($status,[429,502,503,504],true)&&$attempt+1<$attempts){$this->waitBeforeRetry($response,$attempt);continue;}$problem=json_decode($response['body'],true)?:[];throw new ProblemException($status,$problem['type']??'about:blank',$this->header($response,'x-request-id')??$problem['requestId']??null,$problem['detail']??$problem['title']??'Request failed',$this->rateLimit($response));}throw new \LogicException('Unreachable');}
     /** @return array{status:int,body:string,headers?:array<string,string>} */
     private function send(string $url,string $method,?string $body,?string $cartToken,array $extraHeaders=[]): array {
         $headers=['Accept'=>'application/json','x-publishable-key'=>$this->publishableKey]+$extraHeaders;if($cartToken!==null)$headers['x-cart-token']=$cartToken;if($body!==null)$headers['Content-Type']='application/json';
         if(is_callable($this->transport))return ($this->transport)($url,$headers,$method,$body);
         $header='';foreach($headers as $name=>$value)$header.="{$name}: {$value}\r\n";
-        $context=stream_context_create(['http'=>['method'=>$method,'ignore_errors'=>true,'timeout'=>10,'header'=>$header,'content'=>$body??'']]);
+        $context=stream_context_create(['http'=>['method'=>$method,'ignore_errors'=>true,'timeout'=>$this->timeoutSeconds,'header'=>$header,'content'=>$body??'']]);
         $body=file_get_contents($url,false,$context);$line=$http_response_header[0]??'HTTP/1.1 500';preg_match('/\s(\d{3})\s/',$line,$match);$responseHeaders=[];foreach(($http_response_header??[])as$headerLine){$parts=explode(':',$headerLine,2);if(count($parts)===2)$responseHeaders[strtolower(trim($parts[0]))]=trim($parts[1]);}return ['status'=>(int)($match[1]??500),'body'=>$body===false?'':$body,'headers'=>$responseHeaders];
     }
     /** @param array{headers?:array<string,string>} $response */
     private function header(array $response,string $name):?string {foreach(($response['headers']??[])as$key=>$value)if(strtolower($key)===strtolower($name))return$value;return null;}
+    /** @param array{headers?:array<string,string>} $response @return array{limit:?int,remaining:?int,reset:?int,retryAfter:?string} */
+    private function rateLimit(array $response):array {$number=function(string $name)use($response):?int{$value=$this->header($response,$name);return$value!==null&&is_numeric($value)?(int)$value:null;};return['limit'=>$number('ratelimit-limit'),'remaining'=>$number('ratelimit-remaining'),'reset'=>$number('ratelimit-reset'),'retryAfter'=>$this->header($response,'retry-after')];}
     /** @param array{headers?:array<string,string>} $response */
     private function waitBeforeRetry(array $response,int $attempt):void {$value=$this->header($response,'retry-after');$delay=null;if($value!==null){if(is_numeric($value)&&((float)$value)>=0)$delay=(float)$value;else{$date=strtotime($value);if($date!==false)$delay=max(0,$date-time());}}$delay??=min(30,(0.25*(2**$attempt))+(random_int(0,100)/1000));if($delay>0)usleep((int)min(30000000,round($delay*1000000)));}
 }
