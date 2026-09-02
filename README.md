@@ -21,6 +21,8 @@ The client discovers the correct public API settings. A store ID is an identifie
 
 Eligible reads and idempotent order placement use bounded exponential backoff and honor `Retry-After` up to 30 seconds. Ordinary mutations are never replayed. Typed errors prefer the authoritative `X-Request-Id` response header for support correlation.
 
+Native HTTP requests default to a 10-second timeout; pass `timeoutSeconds` as the final constructor or `forStore` argument to select a value up to 120 seconds. Custom transports must enforce their own deadline. `ProblemException::$rateLimit` provides normalized limit, remaining, reset, and retry-after diagnostics.
+
 `php tests/live.php` runs the complete maintained fixture journey with no environment setup: catalog, isolated cart, checkout choices and one pending bank-transfer test order. Set `HEADLESS_STORE_ID` only for another provisioned sandbox. The test does not charge money.
 
 The package supports catalog, anonymous cart, guest checkout preparation, capability-gated non-hosted order placement, and guest order-status lookup. Keep a cart token in the shopper's secure session. Reuse the same order intent key after an uncertain result; do not blindly replay ordinary cart changes. Order number and checkout email are sent in a POST body and the lookup is not automatically retried.
