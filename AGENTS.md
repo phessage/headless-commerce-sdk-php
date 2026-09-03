@@ -8,6 +8,8 @@ This is a PHP 8.2+ framework-neutral SDK with an optional Laravel provider. Cano
 
 `storeId` bootstraps publishable runtime configuration. Preserve key-derived tenancy, cart bearer-token secrecy, non-retry of mutations/lookup, exact-key retry for order placement and neutral guest proof. Guest orders contain `items[]`; do not consume `itemCount`.
 
+Signed outbound webhooks are deployed. Receiver code verifies the exact raw body, timestamp, HMAC and delivery-ID binding before parsing or side effects, then atomically claims the delivery ID in durable storage.
+
 ## PHP/Laravel practices
 
 - Use strict types, typed properties/returns, immutable value flow and explicit exceptions. Do not suppress warnings or accept arbitrary mixed shapes without validation.
