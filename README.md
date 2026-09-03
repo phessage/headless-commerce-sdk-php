@@ -25,6 +25,8 @@ Native HTTP requests default to a 10-second timeout; pass `timeoutSeconds` as th
 
 `php tests/live.php` runs the complete maintained fixture journey with no environment setup: catalog, isolated cart, checkout choices and one pending bank-transfer test order. Set `HEADLESS_STORE_ID` only for another provisioned sandbox. The test does not charge money.
 
+CI allocates a short-lived, repository-specific fixture and injects its publishable key and product ID into this journey, then revokes the key in an `always()` cleanup step. A missing allocator secret fails CI; it never silently skips deployed verification.
+
 The package supports catalog, anonymous cart, guest checkout preparation, capability-gated non-hosted order placement, and guest order-status lookup. Keep a cart token in the shopper's secure session. Reuse the same order intent key after an uncertain result; do not blindly replay ordinary cart changes. Order number and checkout email are sent in a POST body and the lookup is not automatically retried.
 
 This preview does not collect card/wallet payments, capture/refund money, merge customer carts, or deliver webhooks. See [architecture](docs/architecture.md) and [security](docs/security.md).

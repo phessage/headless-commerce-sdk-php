@@ -3,10 +3,12 @@ require __DIR__.'/../src/ProblemException.php';require __DIR__.'/../src/Client.p
 use Phessage\HeadlessCommerce\Client;
 $storeId=getenv('HEADLESS_STORE_ID')?:'01f5b02f-d7c0-42cd-b880-59f78ea70aa3';
 $assert=static function(bool $value,string $message):void{if(!$value)throw new RuntimeException($message);};
-$client=Client::forStore($storeId);$product='1f7884bd-759d-4f47-9fdb-c7ea3dd3a9ef';
+$product=getenv('HEADLESS_PRODUCT_ID')?:'1f7884bd-759d-4f47-9fdb-c7ea3dd3a9ef';
+$key=getenv('HEADLESS_PUBLISHABLE_KEY')?:'';$api=getenv('HEADLESS_API_URL')?:'https://api.1ecomm.com';
+$client=$key!==''?new Client($api,$key):Client::forStore($storeId);
 $catalog=$client->listProducts(100);$assert(in_array($product,array_column($catalog['data'],'id'),true),'sellable fixture missing');
 $created=$client->createCart();$token=$created['cartToken'];$added=$client->addCartItem($token,$product);$assert(count($added['data']['items'])===1,'item was not added');
 $prepared=$client->updateCheckoutDetails($token,['customerInfo'=>['firstName'=>'Headless','lastName'=>'Fixture','email'=>'php-live@example.test'],'billingAddress'=>['firstName'=>'Headless','lastName'=>'Fixture','email'=>'php-live@example.test','address1'=>'1 Test Way','city'=>'Vancouver','state'=>'BC','postalCode'=>'V6B1A1','country'=>'CA'],'shippingAddress'=>['sameAsBilling'=>true]]);
-$data=$prepared['data'];$assert(count($data['shippingOptions'])===2&&count($data['paymentMethods'])===1,'checkout choices differ from fixture contract');
-$shipping=$client->selectCheckoutShippingMethod($token,$data['shippingOptions'][0]['id']);$payment=$client->selectCheckoutPaymentMethod($token,$data['paymentMethods'][0]['id']);$assert($shipping['data']['selectedShippingMethodId']!==null,'shipping selection missing');$assert($payment['data']['selectedPaymentMethodId']!==null,'payment selection missing');
+$data=$prepared['data'];$assert(count($data['paymentMethods'])>=1,'payment choices differ from fixture contract');
+if($data['shippingOptions']!==[]){$shipping=$client->selectCheckoutShippingMethod($token,$data['shippingOptions'][0]['id']);$assert($shipping['data']['selectedShippingMethodId']!==null,'shipping selection missing');}$payment=$client->selectCheckoutPaymentMethod($token,$data['paymentMethods'][0]['id']);$assert($payment['data']['selectedPaymentMethodId']!==null,'payment selection missing');
 $order=$client->placeOrder($token,'php-live-'.bin2hex(random_bytes(16)));$assert(($order['data']['requiresPayment']??true)===false&&($order['data']['paymentStatus']??'')==='pending','pending order confirmation missing');$lookup=$client->lookupOrder($order['data']['orderNumber'],'php-live@example.test');$assert(($lookup['data']['orderNumber']??'')===$order['data']['orderNumber'],'created order could not be reopened');echo "live order journey passed and reopened: ".$order['data']['orderNumber']."\n";
