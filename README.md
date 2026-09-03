@@ -1,5 +1,7 @@
 # 1Ecomm Headless Commerce PHP SDK
 
+Free for authorized 1Ecomm customers and their developers to build and operate 1Ecomm-connected commerce experiences. You may deploy finished sites, but may not redistribute, resell, sublicense, mirror, or republish this SDK or a reusable derivative. See [LICENSE.md](LICENSE.md).
+
 Use this PHP 8.2+ package for a PHP or Laravel website that sells products from a 1Ecomm store.
 
 ## Start

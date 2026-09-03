@@ -19,6 +19,10 @@ Signed outbound webhooks are deployed. Receiver code verifies the exact raw body
 - The service provider may merge/publish config and bind the client, but must not create routes or hidden network calls at boot.
 - Dependency changes update `composer.lock` at the PHP 8.2 platform floor and must also pass current supported PHP/Laravel matrices.
 
+## License boundary
+
+`LICENSE.md` allows authorized 1Ecomm customer projects and deployed or compiled shopper applications, but prohibits redistribution of this reusable SDK/plugin or its derivatives. Preserve the notice in clones, packages, generated projects and documentation. Do not describe this repository as open source or grant broader rights in examples.
+
 ## Verification
 
 Run `composer install`, `composer check`, and the maintained sandbox `php tests/live.php` when authorized. Use a real Laravel boot test for provider changes. Never use production customer data or call a skipped live test complete.
