@@ -19,6 +19,8 @@ $order = $client->lookupOrder('ORD123', 'buyer@example.com');
 
 The client discovers the correct public API settings. A store ID is an identifier, not a password. Laravel package discovery and configuration are explained in [Laravel integration](docs/laravel.md).
 
+Preview releases are distributed from immutable GitHub Release tags because this repository and package are proprietary. Composer consumers authorize GitHub and reference the repository as a VCS source; each release includes an install-smoked archive, locked dependency manifest and SHA-256 checksums. Packagist publication would require a publicly fetchable source distribution and remains disabled unless the owner explicitly changes the licensing/distribution policy.
+
 Eligible reads and idempotent order placement use bounded exponential backoff and honor `Retry-After` up to 30 seconds. Ordinary mutations are never replayed. Typed errors prefer the authoritative `X-Request-Id` response header for support correlation.
 
 Native HTTP requests default to a 10-second timeout; pass `timeoutSeconds` as the final constructor or `forStore` argument to select a value up to 120 seconds. Custom transports must enforce their own deadline. `ProblemException::$rateLimit` provides normalized limit, remaining, reset, and retry-after diagnostics.
