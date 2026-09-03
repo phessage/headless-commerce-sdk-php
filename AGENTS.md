@@ -22,3 +22,7 @@ Signed outbound webhooks are deployed. Receiver code verifies the exact raw body
 ## Verification
 
 Run `composer install`, `composer check`, and the maintained sandbox `php tests/live.php` when authorized. Use a real Laravel boot test for provider changes. Never use production customer data or call a skipped live test complete.
+
+## Releases
+
+`.github/workflows/release.yml` is the only release path. It requires the protected `package-release` environment and a new exact semantic-version tag, runs the PHP/Laravel suite, installs the built archive without development dependencies, and attaches the immutable archive, dependency manifest and checksums to a GitHub Release. Never publish this private proprietary source to public Packagist, move a tag or replace an existing release asset without an explicit licensing/distribution decision.
