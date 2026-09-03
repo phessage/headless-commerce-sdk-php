@@ -29,4 +29,4 @@ CI allocates a short-lived, repository-specific fixture and injects its publisha
 
 The package supports catalog, anonymous cart, guest checkout preparation, capability-gated non-hosted order placement, and guest order-status lookup. Keep a cart token in the shopper's secure session. Reuse the same order intent key after an uncertain result; do not blindly replay ordinary cart changes. Order number and checkout email are sent in a POST body and the lookup is not automatically retried.
 
-This preview does not collect card/wallet payments, capture/refund money, merge customer carts, or deliver webhooks. See [architecture](docs/architecture.md) and [security](docs/security.md).
+This preview does not directly capture/refund money or merge customer carts. Hosted checkout and signed commerce events are platform capabilities. Pass the exact request body and headers to `WebhookVerifier::verify`; keep the `whsec_` value server-side and provide an atomic replay-claim callable backed by a unique delivery-ID constraint before side effects. See [architecture](docs/architecture.md) and [security](docs/security.md).
