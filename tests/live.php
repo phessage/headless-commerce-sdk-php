@@ -27,6 +27,11 @@ if($customerEmail!==''&&$customerPassword!==''){
     $assert($addressId!==null&&$address['data']['address']['isDefault']===true,'customer address creation failed');
     $updated=$client->updateCustomerAddress($auth['token'],$addressId,['address2'=>'Suite PHP']);$assert($updated['data']['address']['address2']==='Suite PHP','customer address update failed');
     $addresses=$client->customerAddresses($auth['token']);$assert(in_array($addressId,array_column($addresses['data']['addresses'],'id'),true),'customer address list failed');
+    $returnOrderId=getenv('HEADLESS_RETURN_ORDER_ID')?:'';$returnOrderItemId=getenv('HEADLESS_RETURN_ORDER_ITEM_ID')?:'';$assert($returnOrderId!==''&&$returnOrderItemId!=='','eligible return fixture missing');
+    $return=$client->createCustomerReturn($auth['token'],$returnOrderId,['reason'=>'not_as_expected','items'=>[['orderItemId'=>$returnOrderItemId,'quantity'=>1,'resolution'=>'refund']]])['data']['return'];$assert(($return['orderId']??'')===$returnOrderId&&($return['status']??'')==='requested','return creation projection drifted');
+    $orderReturns=$client->customerOrderReturns($auth['token'],$returnOrderId)['data']['returns'];$assert(in_array($return['id'],array_column($orderReturns,'id'),true),'return missing from order history');
+    $customerReturns=$client->customerReturns($auth['token'])['data']['returns'];$assert(in_array($return['id'],array_column($customerReturns,'id'),true),'return missing from customer history');
+    $cancelledReturn=$client->cancelCustomerReturn($auth['token'],$return['id'])['data']['return'];$assert(($cancelledReturn['status']??'')==='cancelled','return cancellation projection drifted');
     $deleted=$client->deleteCustomerAddress($auth['token'],$addressId);$assert($deleted['data']['deleted']===true,'customer address deletion failed');
     $rotated=$client->refreshCustomer($auth['refreshToken']);
     try{$client->refreshCustomer($auth['refreshToken']);throw new RuntimeException('consumed refresh token was accepted');}catch(ProblemException $error){$assert($error->status===401&&$error->problemCode==='HEADLESS_HTTP_401','refresh replay problem contract failed');}
