@@ -12,3 +12,5 @@ Pass the exact raw webhook body to `WebhookVerifier::verify`. It validates times
 Send access tokens only as `x-customer-token`. Store rotating refresh capabilities in encrypted server-side session storage, replace them after each refresh, and clear both credentials on logout. Replaying a consumed member revokes its live refresh-token family; treat an unexpected refresh 401 as sign-in-required. An access token already issued can remain valid for at most 15 minutes.
 
 For Google/Apple redirect login, call `OAuthTransaction::create()` for every attempt. Store its state, verifier and exact callback URI in the encrypted pending-login session; compare returned state before exchange and delete the transaction after either outcome. Never log the code or verifier.
+
+Password-recovery requests intentionally return the same accepted result whether an account exists. Recovery capabilities expire after one hour and work once; keep them out of logs, analytics, support payloads and referrer-bearing pages.
