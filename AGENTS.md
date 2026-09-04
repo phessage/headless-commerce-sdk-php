@@ -34,3 +34,5 @@ Run `composer install`, `composer check`, and the maintained sandbox `php tests/
 ## Releases
 
 `.github/workflows/release.yml` is the only release path. It requires the protected `package-release` environment and a new exact semantic-version tag, runs the PHP/Laravel suite, installs the built archive without development dependencies, and attaches the immutable archive, dependency manifest and checksums to a GitHub Release. Never publish this private proprietary source to public Packagist, move a tag or replace an existing release asset without an explicit licensing/distribution decision.
+
+The archive must never contain `vendor/`; `scripts/package-smoke.sh` enforces that boundary plus a size ceiling and required license/contract/client entries. Do not weaken those assertions to make a release pass.
