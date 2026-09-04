@@ -35,6 +35,7 @@ if($customerEmail!==''&&$customerPassword!==''){
     $deleted=$client->deleteCustomerAddress($auth['token'],$addressId);$assert($deleted['data']['deleted']===true,'customer address deletion failed');
     $rotated=$client->refreshCustomer($auth['refreshToken']);
     try{$client->refreshCustomer($auth['refreshToken']);throw new RuntimeException('consumed refresh token was accepted');}catch(ProblemException $error){$assert($error->status===401&&$error->problemCode==='HEADLESS_HTTP_401','refresh replay problem contract failed');}
+    try{$client->refreshCustomer($rotated['data']['refreshToken']);throw new RuntimeException('refresh family survived ancestor replay');}catch(ProblemException $error){$assert($error->status===401&&$error->problemCode==='HEADLESS_HTTP_401','refresh family revocation contract failed');}
     $logout=$client->logoutCustomer($rotated['data']['refreshToken']);$assert($logout['data']['loggedOut']===true,'customer logout failed');
 }
 echo "live guest and customer journeys passed and reopened: ".$order['data']['orderNumber']."\n";
