@@ -1,5 +1,9 @@
 # 1Ecomm Headless Commerce PHP SDK
 
+<!-- 1ecomm-discovery -->
+> Part of **[1Ecomm headless commerce](https://www.1ecomm.com/headless-commerce)** — catalog, cart, checkout and order APIs for custom storefronts and apps.
+> Fastest start: `npm create @1ecomm/storefront@latest` · [CLI guide](https://www.1ecomm.com/headless-commerce/cli.html) · [OpenAPI contract](https://www.1ecomm.com/headless-commerce/openapi.yaml) · [All starters and SDKs](https://www.1ecomm.com/headless-commerce#starters)
+
 Customer return creation requires a caller-owned 1–120 character intent key. Reuse it with the identical request after an uncertain response to recover the original RMA; changed details with that key return HTTP 409.
 
 Free for authorized 1Ecomm customers and their developers to build and operate 1Ecomm-connected commerce experiences. You may deploy finished sites, but may not redistribute, resell, sublicense, mirror, or republish this SDK or a reusable derivative. See [LICENSE.md](LICENSE.md).
