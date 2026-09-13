@@ -4,7 +4,7 @@ Read `README.md`, `docs/architecture.md`, `docs/security.md`, `docs/laravel.md`,
 
 ## Boundary and contract
 
-This is a PHP 8.2+ framework-neutral SDK with an optional Laravel provider. Canonical API truth is `phessage/ecommerce-service/contracts/headless-commerce-v1.openapi.yaml`. Keep Laravel integration as configuration/wiring; the core client must work without Laravel.
+This is a PHP 8.2+ framework-neutral SDK with an optional Laravel provider. Canonical API truth is `https://www.1ecomm.com/headless-commerce/openapi.yaml`. Keep Laravel integration as configuration/wiring; the core client must work without Laravel.
 
 The reviewed snapshot at `contracts/headless-commerce-v1.openapi.yaml` and its SHA-256 must move together. Run `composer contract:check`. Do not update the digest until the source diff and every affected client method/error field have been reviewed against deployed behavior.
 
