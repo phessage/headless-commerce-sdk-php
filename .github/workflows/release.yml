@@ -7,13 +7,23 @@ permissions: {contents: write}
 concurrency: {group: php-sdk-release, cancel-in-progress: false}
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, docker-services]
+    container: php:8.2-cli
     environment: package-release
     env: {RELEASE_VERSION: '${{ inputs.version }}'}
     steps:
+      - name: Install git for checkout and tagging inside the job container
+        run: apt-get update && apt-get install --no-install-recommends -y git unzip ca-certificates
       - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
-        with: {php-version: '8.2', tools: 'composer:v2'}
+      - name: Trust the checked-out workspace inside the job container
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Install Composer inside the job container
+        run: curl -fsSL https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+      - name: Install GitHub CLI into the job workspace
+        run: |
+          v=2.62.0
+          curl -fsSL "https://github.com/cli/cli/releases/download/v${v}/gh_${v}_linux_amd64.tar.gz" | tar -xz -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/gh_${v}_linux_amd64/bin" >> "$GITHUB_PATH"
       - name: Verify immutable release identity
         run: |
           [[ "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$ ]]
@@ -27,7 +37,7 @@ jobs:
           composer archive --format=zip --dir=release
           composer show --locked --format=json > release/composer-dependencies.json
           printf '{"package":"phessage/headless-commerce-sdk","version":"%s","commit":"%s","format":"composer-vcs"}\n' "$RELEASE_VERSION" "$GITHUB_SHA" > release/release-manifest.json
-          shasum -a 256 release/* > release/SHA256SUMS
+          sha256sum release/* > release/SHA256SUMS
       - name: Create immutable tag and GitHub release
         env: {GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}', RELEASE_VERSION: '${{ inputs.version }}'}
         run: |
