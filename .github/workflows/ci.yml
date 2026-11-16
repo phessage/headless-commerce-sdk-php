@@ -1,22 +1,31 @@
 name: CI
-on: [push, pull_request]
+on:
+  # Public repository on the organisation's self-hosted runners. Pull requests
+  # (including any from forks) never trigger a run: CI runs only for pushes to
+  # main, release tags and manual dispatch by a maintainer.
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
 permissions: {contents: read}
 jobs:
   test:
     strategy: {matrix: {php: ['8.2','8.3','8.4']}}
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, docker-services]
+    container: php:${{ matrix.php }}-cli
     steps:
       - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
-        with: {php-version: '${{ matrix.php }}'}
       - run: php -l src/Client.php
       - run: php tests/run.php
   laravel:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, docker-services]
+    container: php:8.3-cli
     steps:
+      - name: Install git for checkout and tagging inside the job container
+        run: apt-get update && apt-get install --no-install-recommends -y git unzip ca-certificates
       - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
-        with: {php-version: '8.3'}
+      - name: Install Composer inside the job container
+        run: curl -fsSL https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
       - run: composer install --no-interaction --prefer-dist
       - run: composer test:laravel
   deployed-journey:
@@ -24,12 +33,13 @@ jobs:
     # deployed journey cannot allocate a fixture there. It is skipped for forks
     # by design and stays fail-closed for every trusted run, including main.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, docker-services]
+    container: php:8.3-cli
     env: {HEADLESS_E2E_ALLOCATOR_TOKEN: '${{ secrets.HEADLESS_E2E_ALLOCATOR_TOKEN }}'}
     steps:
+      - name: Install fixture tooling inside the job container
+        run: apt-get update && apt-get install --no-install-recommends -y jq
       - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
-        with: {php-version: '8.3'}
       - name: Allocate isolated deployed fixture
         run: bash .github/scripts/headless-fixture.sh allocate
       - name: Run deployed catalog-to-order journey
